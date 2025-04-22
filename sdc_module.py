@@ -4,11 +4,6 @@ from openpyxl import Workbook, load_workbook
 from encryption_module import encrypt_data
 from acm_module import generate_acm
 
-# These global variables are used to determine the file directory
-DATA_DIR = "data"
-DEFAULT_SDC_PATH = os.path.join(DATA_DIR, "SecureDataContainer.xlsx")
-
-
 # This helper function is used to encrypt and embed the ACM
 def embed_acm_in_workbook(wb: Workbook, acm: dict, acm_key: bytes):
     acm_ws = wb.create_sheet("_ACM")
@@ -24,8 +19,12 @@ def embed_acm_in_workbook(wb: Workbook, acm: dict, acm_key: bytes):
 # If the cell has data, then it will cal encrypt_data to encrypt it.
 # It will then create a key for the ACM and embed that into the sheet.
 # Finally, it will create a json file to save the keys and save the new SDC.
-def create_sdc(output_file=DEFAULT_SDC_PATH):
-    os.makedirs(DATA_DIR, exist_ok=True)
+def create_sdc(sdc_name="default_sdc"):
+    sdc_dir = f"data/sdcs/{sdc_name}"
+    os.makedirs(sdc_dir, exist_ok=True)
+
+    output_file = os.path.join(sdc_dir, "SecureDataContainer.xlsx")
+
     wb = Workbook()
     sheet_names = ["Sheet1", "Sheet2", "Sheet3", "Sheet4", "Sheet5"]
     ws = wb.active

@@ -6,7 +6,9 @@ from spreadsheet_viewer import view_sdc
 import os
 
 
+# This class is responsible for creating the main GUI, and interacting with the other modules
 class SDCApp:
+    # Creates the initial geometry of the GUI
     def __init__(self, root):
         self.root = root
         self.root.title("Secure Data Container (SDC) System")
@@ -17,6 +19,7 @@ class SDCApp:
 
         self.build_login_screen()
 
+    # Creates the login button, and the entry boxes for the username and password
     def build_login_screen(self):
         tk.Label(self.root, text="Username").pack(pady=5)
         tk.Entry(self.root, textvariable=self.username_var).pack()
@@ -26,6 +29,9 @@ class SDCApp:
 
         tk.Button(self.root, text="Login", command=self.handle_login).pack(pady=20)
 
+    # This method will retrieve the inputted username and password, and call the authentication module to check it.
+    # If the module returns the role, then the login was successful and the role menu will be created/called
+    # If nothing is returned, then it will show an error message
     def handle_login(self):
         username = self.username_var.get().strip()
         password = self.password_var.get().strip()
@@ -42,6 +48,10 @@ class SDCApp:
         else:
             messagebox.showerror("Login Failed", "Invalid credentials.")
 
+    # This method  will create the new menu when a user logs in.
+    # If they are a developer, then it will create two new buttons.
+    # One button will create a new blank SDC, while the other encrypts an existing Excel file.
+    # If they are a normal user, then it will create one button. This button decrypts an SDC.
     def launch_role_menu(self, role):
         menu = tk.Toplevel()
         menu.title(f"Role Menu - {role}")
@@ -58,6 +68,9 @@ class SDCApp:
         tk.Button(menu, text="Exit", command=self.root.destroy).pack(pady=20)
 
 
+# This function will ask the user for a name to create the SDC under, and then attempt to call create_sdc
+# If it's successful, a success message will be returned and the SDC can be found in files under the given name.
+# If it's unsuccessful, an error message will be returned.
 def create_sdc_gui():
     sdc_name = simpledialog.askstring("SDC Name", "Enter a name for this new SDC:")
     if sdc_name:
@@ -68,6 +81,11 @@ def create_sdc_gui():
             messagebox.showerror("Error", f"Failed to create SDC: {e}")
 
 
+# This function will have the user select an Excel file to encrypt.
+# It will then ask the user for a name to create the SDC under, and then attempt to call encrypt_existing_excel
+# If it's successful, a success message will be returned and the SDC can be found in files under the given name.
+# If it's unsuccessful in finding the file, a Cancelled error message will be returned.
+# If it's unsuccessful in encrypting the file then an error message will be returned.
 def import_and_encrypt_excel_gui():
     file_path = filedialog.askopenfilename(
         title="Select Excel File to Encrypt",
@@ -86,6 +104,11 @@ def import_and_encrypt_excel_gui():
         messagebox.showinfo("Cancelled", "No file selected.")
 
 
+# This function will have the user select an Excel file (preferably an SDC file)
+# It will then attempt to decrypt the file.
+# If it's successful, a success message will be returned and the decrypted SDC file can be found in files.
+# If the file can't be found then a cancelled error will be returned.
+# If it fails to decrypt the file then an error will be returned.
 def browse_and_view_sdc(role):
     file_path = filedialog.askopenfilename(
         title="Select an SDC Excel File",
@@ -105,6 +128,7 @@ def browse_and_view_sdc(role):
         messagebox.showinfo("Cancelled", "No file selected.")
 
 
+# The main function to run the GUI
 if __name__ == "__main__":
     root = tk.Tk()
     app = SDCApp(root)

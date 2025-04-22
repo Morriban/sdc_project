@@ -4,25 +4,26 @@ from openpyxl import Workbook, load_workbook
 from encryption_module import encrypt_data
 from acm_module import generate_acm
 
+# These global variables are used to determine the file directory
 DATA_DIR = "data"
 DEFAULT_SDC_PATH = os.path.join(DATA_DIR, "SecureDataContainer.xlsx")
 
 
-def _embed_acm_in_workbook(wb: Workbook, acm: dict):
+# This helper function is used to encrypt and embed the ACM
+def embed_acm_in_workbook(wb: Workbook, acm: dict, acm_key: bytes):
     acm_ws = wb.create_sheet("_ACM")
     acm_ws.sheet_state = "hidden"
 
-    roles = list(acm.keys())
-    sheets = sorted({sheet for perms in acm.values() for sheet in perms})
-
-    acm_ws.append(["Role"] + sheets)
-
-    for role in roles:
-        #row = [role] + [acm[role].get(sheet, "") for sheet in sheets]
-        row = [role] + [("read" if sheet in acm[role] else "") for sheet in sheets]
-        acm_ws.append(row)
+    acm_json = json.dumps(acm)
+    encrypted_acm = encrypt_data(acm_key, acm_json)
+    acm_ws["A1"] = encrypted_acm
 
 
+# This function creates a new workbook and fills it with 5 sheets and some data
+# It then goes through each sheet, creating a new key, and checks each cell for data.
+# If the cell has data, then it will cal encrypt_data to encrypt it.
+# It will then create a key for the ACM and embed that into the sheet.
+# Finally, it will create a json file to save the keys and save the new SDC.
 def create_sdc(output_file=DEFAULT_SDC_PATH):
     os.makedirs(DATA_DIR, exist_ok=True)
     wb = Workbook()
@@ -39,7 +40,6 @@ def create_sdc(output_file=DEFAULT_SDC_PATH):
             for row in range(1, 6):
                 ws[f"A{row}"] = f"This is {sheet} - Row {row}"
 
-    # Encrypt each sheet with a unique key
     keys = {}
     for sheet in sheet_names:
         ws = wb[sheet]
@@ -50,19 +50,24 @@ def create_sdc(output_file=DEFAULT_SDC_PATH):
                 if cell.value:
                     cell.value = encrypt_data(key, str(cell.value))
 
-    # Save keys externally
+    acm_key = os.urandom(32)
+    acm = generate_acm(sheet_names)
+    embed_acm_in_workbook(wb, acm, acm_key)
+
     key_file = output_file.replace(".xlsx", "_keys.json")
+    keys["__acm__"] = acm_key.hex()
     with open(key_file, "w") as f:
         json.dump(keys, f)
-
-    # Generate and embed ACM
-    acm = generate_acm(sheet_names)
-    _embed_acm_in_workbook(wb, acm)
 
     wb.save(output_file)
     print(f"Blank SDC created at: {output_file}")
 
 
+# This function creates a new workbook filled with the same contents of the inputted file
+# It then goes through each sheet, creating a new key, and checks each cell for data.
+# If the cell has data, then it will cal encrypt_data to encrypt it.
+# It will then create a key for the ACM and embed that into the sheet.
+# Finally, it will create a json file to save the keys and save the new SDC.
 def encrypt_existing_excel(file_path, sdc_name="default_sdc"):
     sdc_dir = f"data/sdcs/{sdc_name}"
     os.makedirs(sdc_dir, exist_ok=True)
@@ -82,14 +87,14 @@ def encrypt_existing_excel(file_path, sdc_name="default_sdc"):
                 if cell.value:
                     cell.value = encrypt_data(key, str(cell.value))
 
-    # Save keys externally
+    acm_key = os.urandom(32)
+    acm = generate_acm([s for s in wb.sheetnames if not s.startswith("_")])
+    embed_acm_in_workbook(wb, acm, acm_key)
+
     key_file = output_file.replace(".xlsx", "_keys.json")
+    keys["__acm__"] = acm_key.hex()
     with open(key_file, "w") as f:
         json.dump(keys, f)
-
-    # Generate and embed ACM
-    acm = generate_acm(wb.sheetnames)
-    _embed_acm_in_workbook(wb, acm)
 
     wb.save(output_file)
     print(f"Encrypted SDC saved to: {output_file}")

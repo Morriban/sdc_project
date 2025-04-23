@@ -1,0 +1,7 @@
+{
+  "David_Admin": { "password": "pokemon", "role": "administrator" },
+  "David": { "password": "pokemon", "role": "developer" },
+  "David_priv": { "password": "pokemon", "role": "privileged user" },
+  "David_user": { "password": "pokemon", "role": "user" },
+  "David_guest": { "password": "pokemon", "role": "guest" }
+}
